@@ -28,6 +28,8 @@ trait DatabaseAccess {
   val VIEWNAME = "emailtoName"
   val DDOCNAME = "userddoc"
 
+  def getNIQLDeleteQuery(documentId: String) =s"""DELETE FROM $bucketName p USE KEYS "$documentId" RETURNING p"""
+
   def persistOrUpdate(documentId: String, jsonObject: JsonObject): Boolean = {
     val jsonDocument = JsonDocument.create(documentId, jsonObject)
     val savedData = sc.parallelize(Seq(jsonDocument))
@@ -47,6 +49,11 @@ trait DatabaseAccess {
   def getViaKV(listOfDocumentIds: String): Option[Array[String]] = {
     val idAsRDD = sc.parallelize(listOfDocumentIds.split(","))
     Try(idAsRDD.couchbaseGet[JsonDocument]().map(_.content.toString).collect).toOption
+  }
+
+  def deleteViaId(documentID: String): Option[Array[String]] = {
+    val n1qlRDD = Try(sc.couchbaseQuery(N1qlQuery.simple(getNIQLDeleteQuery(documentID))).collect()).toOption
+    n1qlRDD.map(_.map(a => a.value.toString))
   }
 }
 

@@ -101,6 +101,22 @@ trait SparkService extends DatabaseAccess {
             }
           }
         }
+      } ~ path("delete" / "id" / Segment) { (id: String) =>
+      get {
+        complete {
+          try {
+            val idAsRDD: Option[Array[String]] = deleteViaId(id)
+            idAsRDD match {
+              case Some(data) => HttpResponse(StatusCodes.OK, entity = data.mkString(",") + "is deleted")
+              case None => HttpResponse(StatusCodes.InternalServerError, entity = s"Data is not fetched and something went wrong")
+            }
+          } catch {
+            case ex: Throwable =>
+              logger.error(ex, ex.getMessage)
+              HttpResponse(StatusCodes.InternalServerError, entity = s"Error found for ids : $id")
+          }
+        }
       }
+    }
   }
 }
